@@ -7,6 +7,10 @@
 %define class-name PerfectKeywordHash
 %define word-array-name kPerfectKeywordHashTable
 %define length-table-name kPerfectKeywordLengthTable
+/* 
+TODO probably have to remove 7bit option to support keywords with
+chars outside that range
+*/
 %7bit
 %compare-lengths
 %enum
@@ -26,17 +30,19 @@ continue, Token::CONTINUE
 debugger, Token::DEBUGGER
 default, Token::DEFAULT
 delete, Token::DELETE
-do, Token::DO
-else, Token::ELSE
+# begin es
+hacer, Token::DO
+sino, Token::ELSE
 enum, Token::ENUM
 export, Token::EXPORT
 extends, Token::EXTENDS
 false, Token::FALSE_LITERAL
-finally, Token::FINALLY
-for, Token::FOR
-function, Token::FUNCTION
+finalmente, Token::FINALLY
+por, Token::FOR
+funcion, Token::FUNCTION
 get, Token::GET
-if, Token::IF
+si, Token::IF
+# end es
 implements, Token::FUTURE_STRICT_RESERVED_WORD
 import, Token::IMPORT
 in, Token::IN

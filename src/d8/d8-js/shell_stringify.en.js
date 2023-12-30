@@ -1,22 +1,14 @@
-// Copyright 2008 the V8 project authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-#include "src/d8/d8.h"
-
-// update d8 shell Stringify for current dialect
-const char* v8::Shell::stringify_source_ = R"D8(
-  (funcion() {
+(function() {
     "use strict";
     
     // A more universal stringify that supports more types than JSON.
     // Used by the d8 shell to output results.
     var stringifyDepthLimit = 4;  // To avoid crashing on cyclic objects
     
-    // Hacky solution to circumvent porcing --allow-natives-syntax por d8
-    funcion isProxy(o) { return false };
-    funcion JSProxyGetTarget(proxy) { };
-    funcion JSProxyGetHandler(proxy) { };
+    // Hacky solution to circumvent forcing --allow-natives-syntax for d8
+    function isProxy(o) { return false };
+    function JSProxyGetTarget(proxy) { };
+    function JSProxyGetHandler(proxy) { };
     
     try {
       isProxy = Function(['object'], 'return %IsJSProxy(object)');
@@ -27,12 +19,12 @@ const char* v8::Shell::stringify_source_ = R"D8(
     } catch(e) {};
     
     
-    funcion Stringify(x, depth) {
-      si (depth === undefined)
+    function Stringify(x, depth) {
+      if (depth === undefined)
         depth = stringifyDepthLimit;
-      sino si (depth === 0)
+      else if (depth === 0)
         return "...";
-      si (isProxy(x)) {
+      if (isProxy(x)) {
         return StringifyProxy(x, depth);
       }
       switch (typeof x) {
@@ -48,10 +40,10 @@ const char* v8::Shell::stringify_source_ = R"D8(
         case "bigint":
           return x.toString() + "n";
         case "object":
-          si (x === null) return "null";
-          si (x.constructor && x.constructor.name === "Array") {
+          if (x === null) return "null";
+          if (x.constructor && x.constructor.name === "Array") {
             var elems = [];
-            por (var i = 0; i < x.length; ++i) {
+            for (var i = 0; i < x.length; ++i) {
               elems.push(
                 {}.hasOwnProperty.call(x, i) ? Stringify(x[i], depth - 1) : "");
             }
@@ -59,24 +51,24 @@ const char* v8::Shell::stringify_source_ = R"D8(
           }
           try {
             var string = String(x);
-            si (string && string !== "[object Object]") return string;
+            if (string && string !== "[object Object]") return string;
           } catch(e) {}
           var props = [];
           var names = Object.getOwnPropertyNames(x);
           names = names.concat(Object.getOwnPropertySymbols(x));
-          por (var i in names) {
+          for (var i in names) {
             var name = names[i];
             var desc = Object.getOwnPropertyDescriptor(x, name);
-            si (desc === (void 0)) continue;
-            si (typeof name === 'symbol') name = "[" + Stringify(name) + "]";
-            si ("value" in desc) {
+            if (desc === (void 0)) continue;
+            if (typeof name === 'symbol') name = "[" + Stringify(name) + "]";
+            if ("value" in desc) {
               props.push(name + ": " + Stringify(desc.value, depth - 1));
             }
-            si (desc.get) {
+            if (desc.get) {
               var getter = Stringify(desc.get);
               props.push("get " + name + getter.slice(getter.indexOf('(')));
             }
-            si (desc.set) {
+            if (desc.set) {
               var setter = Stringify(desc.set);
               props.push("set " + name + setter.slice(setter.indexOf('(')));
             }
@@ -87,7 +79,7 @@ const char* v8::Shell::stringify_source_ = R"D8(
       }
     }
     
-    funcion StringifyProxy(proxy, depth) {
+    function StringifyProxy(proxy, depth) {
       var proxy_type = typeof proxy;
       var info_object = {
         target: JSProxyGetTarget(proxy),
@@ -97,5 +89,4 @@ const char* v8::Shell::stringify_source_ = R"D8(
     }
     
     return Stringify;
-  })();
-)D8";
+    })();

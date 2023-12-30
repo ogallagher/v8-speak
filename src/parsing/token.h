@@ -140,12 +140,12 @@ namespace internal {
   K(DEBUGGER, "debugger", 0)                                                  \
   K(DEFAULT, "default", 0)                                                    \
   /* DELETE */                                                                \
-  K(DO, "do", 0)                                                              \
-  K(ELSE, "else", 0)                                                          \
-  K(FINALLY, "finally", 0)                                                    \
-  K(FOR, "for", 0)                                                            \
-  K(FUNCTION, "function", 0)                                                  \
-  K(IF, "if", 0)                                                              \
+  K(DO, "hacer", 0)                                                           \
+  K(ELSE, "sino", 0)                                                          \
+  K(FINALLY, "finalmente", 0)                                                 \
+  K(FOR, "por", 0)                                                            \
+  K(FUNCTION, "funcion", 0)                                                   \
+  K(IF, "si", 0)                                                              \
   /* IN */                                                                    \
   /* INSTANCEOF */                                                            \
   K(NEW, "new", 0)                                                            \

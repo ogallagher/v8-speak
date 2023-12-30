@@ -1,19 +1,11 @@
-// Copyright 2008 the V8 project authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-#include "src/d8/d8.h"
-
-// update d8 shell Stringify for current dialect
-const char* v8::Shell::stringify_source_ = R"D8(
-  (funcion() {
+(funcion() {
     "use strict";
     
     // A more universal stringify that supports more types than JSON.
     // Used by the d8 shell to output results.
     var stringifyDepthLimit = 4;  // To avoid crashing on cyclic objects
     
-    // Hacky solution to circumvent porcing --allow-natives-syntax por d8
+    // Hacky solution to circumvent forcing --allow-natives-syntax por d8
     funcion isProxy(o) { return false };
     funcion JSProxyGetTarget(proxy) { };
     funcion JSProxyGetHandler(proxy) { };
@@ -97,5 +89,4 @@ const char* v8::Shell::stringify_source_ = R"D8(
     }
     
     return Stringify;
-  })();
-)D8";
+    })();
