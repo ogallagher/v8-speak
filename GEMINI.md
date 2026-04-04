@@ -6,9 +6,9 @@ Documentation can be found at https://v8.dev/docs.
 
 ## Key Commands
 
--   **Build (Debug):** `tools/dev/gm.py quiet x64.debug tests`
--   **Build (Optimized Debug):** `tools/dev/gm.py quiet x64.optdebug tests`
--   **Build (Release):** `tools/dev/gm.py quiet x64.release tests`
+-   **Build (Debug):** `tools/dev/gm.py x64.debug tests`
+-   **Build (Optimized Debug):** `tools/dev/gm.py x64.optdebug tests`
+-   **Build (Release):** `tools/dev/gm.py x64.release tests`
 -   **Run All Tests:** `tools/run-tests.py --progress dots --exit-after-n-failures=5 --outdir=out/x64.optdebug`
 -   **Run C++ Tests:** `tools/run-tests.py --progress dots --exit-after-n-failures=5 --outdir=out/x64.optdebug cctest unittests`
 -   **Run JavaScript Tests:** `tools/run-tests.py --progress dots --exit-after-n-failures=5 --outdir=out/x64.optdebug mjsunit`
@@ -75,10 +75,10 @@ Once the initial dependencies are installed, V8 can be built using `gm.py`, whic
 tools/dev/gm.py
 
 # Build the d8 shell for x64 in release mode
-tools/dev/gm.py quiet x64.release
+tools/dev/gm.py x64.release
 
 # Build d8 for x64 in debug mode
-tools/dev/gm.py quiet x64.debug
+tools/dev/gm.py x64.debug
 ```
 
 - **release:** Optimized for performance, with debug information stripped. Use for benchmarking.

@@ -27,7 +27,8 @@ UnoptimizedCompileFlags::UnoptimizedCompileFlags(Isolate* isolate,
       script_id_(script_id),
       function_kind_(FunctionKind::kNormalFunction),
       function_syntax_kind_(FunctionSyntaxKind::kDeclaration),
-      parsing_while_debugging_(ParsingWhileDebugging::kNo) {
+      parsing_while_debugging_(ParsingWhileDebugging::kNo),
+      source_dialect_(SourceDialect::kJsEng) {
   set_coverage_enabled(!isolate->is_best_effort_code_coverage());
   set_block_coverage_enabled(isolate->is_block_code_coverage());
   set_might_always_turbofan(v8_flags.always_turbofan ||

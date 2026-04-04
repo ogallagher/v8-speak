@@ -421,6 +421,9 @@ class V8_EXPORT_PRIVATE Scanner {
   Handle<String> SourceUrl(IsolateT* isolate) const;
   template <typename IsolateT>
   Handle<String> SourceMappingUrl(IsolateT* isolate) const;
+  template <typename IsolateT>
+  Handle<String> SourceDialectString(IsolateT* isolate) const;
+  SourceDialect source_dialect() const { return source_dialect_; }
 
   bool FoundHtmlComment() const { return found_html_comment_; }
 
@@ -495,6 +498,9 @@ class V8_EXPORT_PRIVATE Scanner {
 
     found_html_comment_ = false;
     scanner_error_ = MessageTemplate::kNone;
+    source_dialect_ = flags_.source_dialect();
+    saw_non_comment_token_ = false;
+    found_source_dialect_comment_ = false;
   }
 
   void ReportScannerError(const Location& location, MessageTemplate error) {
@@ -656,6 +662,7 @@ class V8_EXPORT_PRIVATE Scanner {
   Token::Value SkipSingleLineComment();
   Token::Value SkipSourceURLComment();
   void TryToParseSourceURLComment();
+  bool TrySetSourceDialect(base::Vector<const uint8_t> value_literal);
   Token::Value SkipMultiLineComment();
   // Scans a possible HTML comment -- begins with '<!'.
   Token::Value ScanHtmlComment();
@@ -741,6 +748,10 @@ class V8_EXPORT_PRIVATE Scanner {
   // Values parsed from magic comments.
   LiteralBuffer source_url_;
   LiteralBuffer source_mapping_url_;
+  LiteralBuffer source_dialect_name_;
+  SourceDialect source_dialect_;
+  bool saw_non_comment_token_;
+  bool found_source_dialect_comment_;
 
   // Last-seen positions of potentially problematic tokens.
   Location octal_pos_;

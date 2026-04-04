@@ -6,6 +6,7 @@
 #define V8_PARSING_SCANNER_INL_H_
 
 #include "src/parsing/keywords-gen.h"
+#include "src/parsing/keywords-spa-gen.h"
 #include "src/parsing/scanner.h"
 #include "src/strings/char-predicates-inl.h"
 #include "src/utils/utils.h"
@@ -92,11 +93,19 @@ constexpr bool IsKeywordStart(char c) {
 #undef KEYWORD_CHECK
 }
 
-V8_INLINE Token::Value KeywordOrIdentifierToken(const uint8_t* input,
+V8_INLINE Token::Value KeywordOrIdentifierToken(SourceDialect source_dialect,
+                                                const uint8_t* input,
                                                 int input_length) {
   DCHECK_GE(input_length, 1);
-  return PerfectKeywordHash::GetToken(reinterpret_cast<const char*>(input),
+  if (source_dialect == SourceDialect::kJsEng) {
+    return PerfectKeywordHash::GetToken(reinterpret_cast<const char*>(input),
+                                        input_length);
+  }
+  if (source_dialect == SourceDialect::kJsSpa) {
+    return JsSpaKeywordHash::GetToken(reinterpret_cast<const char*>(input),
                                       input_length);
+  }
+  return Token::IDENTIFIER;
 }
 
 // Recursive constexpr template magic to check if a character is in a given
@@ -294,11 +303,14 @@ V8_INLINE Token::Value Scanner::ScanIdentifierOrKeywordInner() {
       });
 
       if (V8_LIKELY(!IdentifierNeedsSlowPath(scan_flags))) {
-        if (!CanBeKeyword(scan_flags)) return Token::IDENTIFIER;
-        // Could be a keyword or identifier.
         base::Vector<const uint8_t> chars =
             next().literal_chars.one_byte_literal();
-        return KeywordOrIdentifierToken(chars.begin(), chars.length());
+        if (source_dialect_ == SourceDialect::kJsEng &&
+            !CanBeKeyword(scan_flags)) {
+          return Token::IDENTIFIER;
+        }
+        return KeywordOrIdentifierToken(source_dialect_, chars.begin(),
+                                        chars.length());
       }
 
       can_be_keyword = CanBeKeyword(scan_flags);
@@ -548,6 +560,10 @@ void Scanner::Scan(TokenDesc* next_desc) {
   DCHECK_EQ(next_desc, &next());
 
   next_desc->token = ScanSingleToken();
+  if (next_desc->token != Token::WHITESPACE &&
+      next_desc->token != Token::UNINITIALIZED) {
+    saw_non_comment_token_ = true;
+  }
   DCHECK_IMPLIES(has_parser_error(), next_desc->token == Token::ILLEGAL);
   next_desc->location.end_pos = source_pos();
 

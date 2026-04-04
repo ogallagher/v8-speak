@@ -17,6 +17,7 @@
 #include "src/objects/script.h"
 #include "src/parsing/pending-compilation-error-handler.h"
 #include "src/parsing/preparse-data.h"
+#include "src/parsing/source-dialect.h"
 
 namespace v8 {
 
@@ -129,6 +130,12 @@ class V8_EXPORT_PRIVATE UnoptimizedCompileFlags {
     return *this;
   }
 
+  SourceDialect source_dialect() const { return source_dialect_; }
+  UnoptimizedCompileFlags& set_source_dialect(SourceDialect value) {
+    source_dialect_ = value;
+    return *this;
+  }
+
  private:
   struct BitFields {
     DEFINE_BIT_FIELDS(FLAG_FIELDS)
@@ -151,6 +158,7 @@ class V8_EXPORT_PRIVATE UnoptimizedCompileFlags {
   FunctionKind function_kind_;
   FunctionSyntaxKind function_syntax_kind_;
   ParsingWhileDebugging parsing_while_debugging_;
+  SourceDialect source_dialect_;
 };
 
 #undef FLAG_FIELDS

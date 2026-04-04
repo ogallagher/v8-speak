@@ -95,6 +95,9 @@ Scanner::Scanner(Utf16CharacterStream* source, UnoptimizedCompileFlags flags)
     : flags_(flags),
       source_(source),
       found_html_comment_(false),
+      source_dialect_(flags.source_dialect()),
+      saw_non_comment_token_(false),
+      found_source_dialect_comment_(false),
       octal_pos_(Location::invalid()),
       octal_message_(MessageTemplate::kNone) {
   DCHECK_NOT_NULL(source);
@@ -244,12 +247,16 @@ void Scanner::TryToParseSourceURLComment() {
     value = &source_url_;
   } else if (name_literal == base::StaticOneByteVector("sourceMappingURL")) {
     value = &source_mapping_url_;
+  } else if (name_literal == base::StaticOneByteVector("sourceDialect")) {
+    value = nullptr;
   } else {
     return;
   }
   if (c0_ != '=')
     return;
-  value->Start();
+  LiteralBuffer source_dialect_literal;
+  if (value != nullptr) value->Start();
+  source_dialect_literal.Start();
   Advance();
   while (IsWhiteSpace(c0_)) {
     Advance();
@@ -258,17 +265,44 @@ void Scanner::TryToParseSourceURLComment() {
     if (IsWhiteSpace(c0_)) {
       break;
     }
-    value->AddChar(c0_);
+    if (value != nullptr) value->AddChar(c0_);
+    source_dialect_literal.AddChar(c0_);
     Advance();
   }
   // Allow whitespace at the end.
   while (c0_ != kEndOfInput && !unibrow::IsLineTerminator(c0_)) {
     if (!IsWhiteSpace(c0_)) {
-      value->Start();
+      if (value != nullptr) value->Start();
+      source_dialect_literal.Start();
       break;
     }
     Advance();
   }
+  if (value == nullptr) {
+    if (!source_dialect_literal.is_one_byte() ||
+        !TrySetSourceDialect(source_dialect_literal.one_byte_literal())) {
+      return;
+    }
+  }
+}
+
+bool Scanner::TrySetSourceDialect(base::Vector<const uint8_t> value_literal) {
+  if (saw_non_comment_token_ || found_source_dialect_comment_) {
+    ReportScannerError(source_pos(), MessageTemplate::kInvalidOrUnexpectedToken);
+    return false;
+  }
+  SourceDialect parsed_source_dialect;
+  if (TryParseSourceDialect(value_literal, &parsed_source_dialect)) {
+    source_dialect_ = parsed_source_dialect;
+    source_dialect_name_.Start();
+    for (int i = 0; i < value_literal.length(); ++i) {
+      source_dialect_name_.AddChar(value_literal[i]);
+    }
+    found_source_dialect_comment_ = true;
+    return true;
+  }
+  ReportScannerError(source_pos(), MessageTemplate::kInvalidOrUnexpectedToken);
+  return false;
 }
 
 Token::Value Scanner::SkipMultiLineComment() {
@@ -613,6 +647,22 @@ Handle<String> Scanner::SourceMappingUrl(IsolateT* isolate) const {
 template Handle<String> Scanner::SourceMappingUrl(Isolate* isolate) const;
 template Handle<String> Scanner::SourceMappingUrl(LocalIsolate* isolate) const;
 
+template <typename IsolateT>
+Handle<String> Scanner::SourceDialectString(IsolateT* isolate) const {
+  Handle<String> tmp;
+  if (source_dialect_name_.length() > 0) {
+    tmp = source_dialect_name_.Internalize(isolate);
+  } else {
+    tmp = isolate->factory()
+              ->InternalizeUtf8String(SourceDialectName(source_dialect_));
+  }
+  return tmp;
+}
+
+template Handle<String> Scanner::SourceDialectString(Isolate* isolate) const;
+template Handle<String> Scanner::SourceDialectString(LocalIsolate* isolate)
+    const;
+
 bool Scanner::ScanDigitsWithNumericSeparators(bool (*predicate)(base::uc32 ch),
                                               bool is_check_first_digit) {
   // we must have at least one digit after 'x'/'b'/'o'
@@ -924,10 +974,11 @@ Token::Value Scanner::ScanIdentifierOrKeywordInnerSlow(bool escaped,
     }
   }
 
-  if (can_be_keyword && next().literal_chars.is_one_byte()) {
+  if ((can_be_keyword || source_dialect_ != SourceDialect::kJsEng) &&
+      next().literal_chars.is_one_byte()) {
     base::Vector<const uint8_t> chars = next().literal_chars.one_byte_literal();
     Token::Value token =
-        KeywordOrIdentifierToken(chars.begin(), chars.length());
+        KeywordOrIdentifierToken(source_dialect_, chars.begin(), chars.length());
     if (base::IsInRange(token, Token::IDENTIFIER, Token::YIELD)) return token;
 
     if (token == Token::FUTURE_STRICT_RESERVED_WORD) {
