@@ -5,7 +5,7 @@
 #ifndef V8_PARSING_SCANNER_INL_H_
 #define V8_PARSING_SCANNER_INL_H_
 
-#include "src/parsing/keywords-gen.h"
+#include "src/parsing/keywords-eng-gen.h"
 #include "src/parsing/keywords-spa-gen.h"
 #include "src/parsing/scanner.h"
 #include "src/strings/char-predicates-inl.h"
