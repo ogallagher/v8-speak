@@ -53,7 +53,13 @@ ARCHES = [
     "fuchsia_x64", "fuchsia_arm64"
 ]
 # Arches that get built/run when you don't specify any.
-DEFAULT_ARCHES = ["ia32", "x64", "arm", "arm64"]
+if sys.platform == "darwin":
+  if platform.machine() == "arm64":
+    DEFAULT_ARCHES = ["arm64"]
+  else:
+    DEFAULT_ARCHES = ["x64"]
+else:
+  DEFAULT_ARCHES = ["ia32", "x64", "arm", "arm64"]
 SANDBOX_SUPPORTED_ARCHES = ["x64", "arm64"]
 # Modes that this script understands.
 MODES = {
