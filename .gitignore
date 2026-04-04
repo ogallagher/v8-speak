@@ -38,6 +38,7 @@
 .pydevproject
 .settings
 .torquelint-cache
+.venv
 .vscode
 /_*
 /base

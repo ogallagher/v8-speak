@@ -25,11 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-import imp
 import itertools
 import os
 from contextlib import contextmanager
+import importlib.util
 
 from . import statusfile
 from . import utils
@@ -236,13 +235,12 @@ class TestGenerator(object):
 
 @contextmanager
 def _load_testsuite_module(name, root):
-  f = None
-  try:
-    (f, pathname, description) = imp.find_module("testcfg", [root])
-    yield imp.load_module(name + "_testcfg", f, pathname, description)
-  finally:
-    if f:
-      f.close()
+  pathname = os.path.join(root, "testcfg.py")
+  module_name = name + "_testcfg"
+  spec = importlib.util.spec_from_file_location(module_name, pathname)
+  module = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(module)
+  yield module
 
 class TestSuite(object):
   @staticmethod

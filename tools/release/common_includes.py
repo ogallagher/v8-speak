@@ -28,9 +28,7 @@
 
 import argparse
 import datetime
-from distutils.version import LooseVersion
 import glob
-import imp
 import json
 import os
 import re
@@ -135,6 +133,10 @@ def NormalizeVersionTags(version_tags):
       normalized_version_tags.append(version_tag)
 
   return normalized_version_tags
+
+
+def VersionKey(version):
+  return tuple(int(part) for part in version.split("."))
 
 
 # Wrapper for side effects.
@@ -553,7 +555,7 @@ class Step(GitRecipesMixin):
     only_version_tags = NormalizeVersionTags(all_tags)
 
     version = sorted(only_version_tags,
-                     key=LooseVersion, reverse=True)[0]
+                     key=VersionKey, reverse=True)[0]
     self["latest_version"] = version
     return version
 
@@ -618,16 +620,16 @@ class Step(GitRecipesMixin):
     output = ""
     for line in FileToText(version_file).splitlines():
       if line.startswith("#define V8_MAJOR_VERSION"):
-        line = re.sub("\d+$", self[prefix + "major"], line)
+        line = re.sub(r"\d+$", self[prefix + "major"], line)
       elif line.startswith("#define V8_MINOR_VERSION"):
-        line = re.sub("\d+$", self[prefix + "minor"], line)
+        line = re.sub(r"\d+$", self[prefix + "minor"], line)
       elif line.startswith("#define V8_BUILD_NUMBER"):
-        line = re.sub("\d+$", self[prefix + "build"], line)
+        line = re.sub(r"\d+$", self[prefix + "build"], line)
       elif line.startswith("#define V8_PATCH_LEVEL"):
-        line = re.sub("\d+$", self[prefix + "patch"], line)
+        line = re.sub(r"\d+$", self[prefix + "patch"], line)
       elif (self[prefix + "candidate"] and
             line.startswith("#define V8_IS_CANDIDATE_VERSION")):
-        line = re.sub("\d+$", self[prefix + "candidate"], line)
+        line = re.sub(r"\d+$", self[prefix + "candidate"], line)
       output += "%s\n" % line
     TextToFile(output, version_file)
 

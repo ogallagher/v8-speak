@@ -25,7 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import imp
+import importlib.util
 import itertools
 import os
 import re
@@ -139,17 +139,15 @@ class TestSuite(testsuite.TestSuite):
 
   def _load_parse_test_record(self):
     root = os.path.join(*TEST_262_TOOLS_ABS_PATH)
-    f = None
     try:
-      (f, pathname, description) = imp.find_module("parseTestRecord", [root])
-      module = imp.load_module("parseTestRecord", f, pathname, description)
+      pathname = os.path.join(root, "parseTestRecord.py")
+      spec = importlib.util.spec_from_file_location("parseTestRecord", pathname)
+      module = importlib.util.module_from_spec(spec)
+      spec.loader.exec_module(module)
       return module.parseTestRecord
     except:
       print('Cannot load parseTestRecord')
       raise
-    finally:
-      if f:
-        f.close()
 
   def _test_loader_class(self):
     return TestLoader
