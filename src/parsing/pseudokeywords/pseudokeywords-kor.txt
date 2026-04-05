@@ -1,0 +1,9 @@
+인수, PseudoKeywordName::kArguments
+가명, PseudoKeywordName::kAs
+생성, PseudoKeywordName::kConstructor
+계산, PseudoKeywordName::kEval
+출처, PseudoKeywordName::kFrom
+메타, PseudoKeywordName::kMeta
+각자, PseudoKeywordName::kOf
+__원형__, PseudoKeywordName::kProto
+대상, PseudoKeywordName::kTarget
