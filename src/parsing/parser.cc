@@ -1245,7 +1245,7 @@ ZoneChunkList<Parser::ExportClauseData>* Parser::ParseExportClause(
     }
     const AstRawString* export_name;
     Scanner::Location location = scanner()->location();
-    if (CheckContextualKeyword(ast_value_factory()->as_string())) {
+    if (CheckContextualKeyword(PseudoKeywordName::kAs)) {
       export_name = ParseExportSpecifierName();
       // Set the location to the whole "a as b" string, so that it makes sense
       // both for errors due to "a" and for errors due to "b".
@@ -1315,7 +1315,7 @@ ZonePtrList<const Parser::NamedImport>* Parser::ParseNamedImports(int pos) {
     // In the presence of 'as', the left-side of the 'as' can
     // be any IdentifierName. But without 'as', it must be a valid
     // BindingIdentifier.
-    if (CheckContextualKeyword(ast_value_factory()->as_string())) {
+    if (CheckContextualKeyword(PseudoKeywordName::kAs)) {
       local_name = ParsePropertyName();
     }
     if (!Token::IsValidIdentifier(scanner()->current_token(),
@@ -1462,7 +1462,7 @@ void Parser::ParseImportDeclaration() {
     switch (peek()) {
       case Token::MUL: {
         Consume(Token::MUL);
-        ExpectContextualKeyword(ast_value_factory()->as_string());
+        ExpectContextualKeyword(PseudoKeywordName::kAs);
         module_namespace_binding = ParseNonRestrictedIdentifier();
         module_namespace_binding_loc = scanner()->location();
         DeclareUnboundVariable(module_namespace_binding, VariableMode::kConst,
@@ -1480,7 +1480,7 @@ void Parser::ParseImportDeclaration() {
     }
   }
 
-  ExpectContextualKeyword(ast_value_factory()->from_string());
+  ExpectContextualKeyword(PseudoKeywordName::kFrom);
   Scanner::Location specifier_loc = scanner()->peek_location();
   const AstRawString* module_specifier = ParseModuleSpecifier();
   const ImportAssertions* import_assertions = ParseImportAssertClause();
@@ -1598,10 +1598,10 @@ void Parser::ParseExportStar() {
   int pos = position();
   Consume(Token::MUL);
 
-  if (!PeekContextualKeyword(ast_value_factory()->as_string())) {
+  if (!PeekContextualKeyword(PseudoKeywordName::kAs)) {
     // 'export' '*' 'from' ModuleSpecifier ';'
     Scanner::Location loc = scanner()->location();
-    ExpectContextualKeyword(ast_value_factory()->from_string());
+    ExpectContextualKeyword(PseudoKeywordName::kFrom);
     Scanner::Location specifier_loc = scanner()->peek_location();
     const AstRawString* module_specifier = ParseModuleSpecifier();
     const ImportAssertions* import_assertions = ParseImportAssertClause();
@@ -1623,7 +1623,7 @@ void Parser::ParseExportStar() {
   // names in local name positions (i.e. left of 'as' or in a clause without
   // 'as') are disallowed without a following 'from' clause.
 
-  ExpectContextualKeyword(ast_value_factory()->as_string());
+  ExpectContextualKeyword(PseudoKeywordName::kAs);
   const AstRawString* export_name = ParseExportSpecifierName();
   Scanner::Location export_name_loc = scanner()->location();
   const AstRawString* local_name = NextInternalNamespaceExportName();
@@ -1631,7 +1631,7 @@ void Parser::ParseExportStar() {
   DeclareUnboundVariable(local_name, VariableMode::kConst, kCreatedInitialized,
                          pos);
 
-  ExpectContextualKeyword(ast_value_factory()->from_string());
+  ExpectContextualKeyword(PseudoKeywordName::kFrom);
   Scanner::Location specifier_loc = scanner()->peek_location();
   const AstRawString* module_specifier = ParseModuleSpecifier();
   const ImportAssertions* import_assertions = ParseImportAssertClause();
@@ -1692,7 +1692,7 @@ Statement* Parser::ParseExportDeclaration() {
           Scanner::Location::invalid();
       ZoneChunkList<ExportClauseData>* export_data =
           ParseExportClause(&reserved_loc, &string_literal_local_name_loc);
-      if (CheckContextualKeyword(ast_value_factory()->from_string())) {
+      if (CheckContextualKeyword(PseudoKeywordName::kFrom)) {
         Scanner::Location specifier_loc = scanner()->peek_location();
         const AstRawString* module_specifier = ParseModuleSpecifier();
         const ImportAssertions* import_assertions = ParseImportAssertClause();

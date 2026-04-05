@@ -13,6 +13,7 @@
 #include "src/numbers/conversions.h"
 #include "src/parsing/parser-base.h"
 #include "src/parsing/preparse-data.h"
+#include "src/parsing/pseudokeywords-gen.h"
 #include "src/strings/unicode.h"
 #include "src/utils/allocation.h"
 #include "src/utils/utils.h"
@@ -40,7 +41,8 @@ PreParserIdentifier GetIdentifierHelper(Scanner* scanner,
     default:
       break;
   }
-  if (string == avf->constructor_string()) {
+  if (AstRawStringEqualsSourceDialectName(string, scanner->source_dialect(),
+                                          PseudoKeywordName::kConstructor)) {
     return PreParserIdentifier::Constructor();
   }
   if (string == avf->name_string()) {
@@ -49,10 +51,12 @@ PreParserIdentifier GetIdentifierHelper(Scanner* scanner,
   if (scanner->literal_contains_escapes()) {
     return PreParserIdentifier::Default();
   }
-  if (string == avf->eval_string()) {
+  if (AstRawStringEqualsSourceDialectName(string, scanner->source_dialect(),
+                                          PseudoKeywordName::kEval)) {
     return PreParserIdentifier::Eval();
   }
-  if (string == avf->arguments_string()) {
+  if (AstRawStringEqualsSourceDialectName(string, scanner->source_dialect(),
+                                          PseudoKeywordName::kArguments)) {
     return PreParserIdentifier::Arguments();
   }
   return PreParserIdentifier::Default();

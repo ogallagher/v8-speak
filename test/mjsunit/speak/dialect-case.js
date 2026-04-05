@@ -7,6 +7,11 @@ const kDialectKeywordFiles = Object.freeze({
   'js-spa': 'src/parsing/keywords/keywords-spa.txt',
 });
 
+const kDialectPseudoKeywordFiles = Object.freeze({
+  'js-eng': 'src/parsing/pseudokeywords/pseudokeywords-eng.txt',
+  'js-spa': 'src/parsing/pseudokeywords/pseudokeywords-spa.txt',
+});
+
 const kTemplateKeywordSpecs = Object.freeze({
   ASYNC: Object.freeze({token: 'Token::ASYNC'}),
   AWAIT: Object.freeze({token: 'Token::AWAIT'}),
@@ -59,15 +64,27 @@ const kTemplateKeywordSpecs = Object.freeze({
   YIELD: Object.freeze({token: 'Token::YIELD'}),
 });
 
-function loadDialectKeywordEntries(dialect) {
-  const keywordFile = kDialectKeywordFiles[dialect];
-  assertTrue(keywordFile !== undefined, `Unknown test dialect: ${dialect}`);
+const kTemplatePseudoKeywordSpecs = Object.freeze({
+  ARGUMENTS: Object.freeze({name: 'PseudoKeywordName::kArguments'}),
+  AS: Object.freeze({name: 'PseudoKeywordName::kAs'}),
+  CONSTRUCTOR: Object.freeze({name: 'PseudoKeywordName::kConstructor'}),
+  EVAL: Object.freeze({name: 'PseudoKeywordName::kEval'}),
+  FROM: Object.freeze({name: 'PseudoKeywordName::kFrom'}),
+  META: Object.freeze({name: 'PseudoKeywordName::kMeta'}),
+  OF: Object.freeze({name: 'PseudoKeywordName::kOf'}),
+  PROTO: Object.freeze({name: 'PseudoKeywordName::kProto'}),
+  TARGET: Object.freeze({name: 'PseudoKeywordName::kTarget'}),
+});
 
+function loadDialectEntries(dialect, fileMap, valuePattern) {
+  const inputFile = fileMap[dialect];
+  assertTrue(inputFile !== undefined, `Unknown test dialect: ${dialect}`);
   const entries = [];
-  for (const line of read(keywordFile).split('\n')) {
-    const match = line.trim().match(/^([^,\s]+),\s*(Token::[A-Z_]+)$/);
+  for (const line of read(inputFile).split('\n')) {
+    const match = line.trim().match(
+        new RegExp(`^([^,\\s]+),\\s*(${valuePattern})$`));
     if (match === null) continue;
-    entries.push(Object.freeze({keyword: match[1], token: match[2]}));
+    entries.push(Object.freeze({spelling: match[1], value: match[2]}));
   }
   return Object.freeze(entries);
 }
@@ -75,21 +92,39 @@ function loadDialectKeywordEntries(dialect) {
 const kDialectKeywordEntries = Object.freeze(
     Object.fromEntries(
         Object.keys(kDialectKeywordFiles)
-            .map((dialect) => [dialect, loadDialectKeywordEntries(dialect)])));
+            .map((dialect) => [dialect,
+                               loadDialectEntries(
+                                   dialect, kDialectKeywordFiles,
+                                   'Token::[A-Z_]+')])));
+
+const kDialectPseudoKeywordEntries = Object.freeze(
+    Object.fromEntries(
+        Object.keys(kDialectPseudoKeywordFiles)
+            .map((dialect) => [dialect,
+                               loadDialectEntries(
+                                   dialect, kDialectPseudoKeywordFiles,
+                                   'PseudoKeywordName::k[A-Za-z]+')])));
 
 function keywordForToken(dialect, token) {
   const tokenName = token.startsWith('Token::') ? token : `Token::${token}`;
   const entry =
-      kDialectKeywordEntries[dialect].find((candidate) => candidate.token === tokenName);
+      kDialectKeywordEntries[dialect].find((candidate) => candidate.value === tokenName);
   assertTrue(entry !== undefined, `Missing ${tokenName} for ${dialect}`);
-  return entry.keyword;
+  return entry.spelling;
 }
 
 function keywordForExactSpelling(dialect, spelling) {
   const entry = kDialectKeywordEntries[dialect]
-                    .find((candidate) => candidate.keyword === spelling);
+                    .find((candidate) => candidate.spelling === spelling);
   assertTrue(entry !== undefined, `Missing keyword ${spelling} for ${dialect}`);
-  return entry.keyword;
+  return entry.spelling;
+}
+
+function pseudoKeywordForName(dialect, name) {
+  const entry =
+      kDialectPseudoKeywordEntries[dialect].find((candidate) => candidate.value === name);
+  assertTrue(entry !== undefined, `Missing pseudokeyword ${name} for ${dialect}`);
+  return entry.spelling;
 }
 
 function keywordCount(dialect) {
@@ -98,7 +133,7 @@ function keywordCount(dialect) {
 
 function renderDialectKeywordProperties(dialect) {
   return kDialectKeywordEntries[dialect]
-      .map(({keyword}, index) => `    ${keyword}: ${index},`)
+      .map(({spelling}, index) => `    ${spelling}: ${index},`)
       .join('\n');
 }
 
@@ -110,6 +145,14 @@ function resolveTemplateKeyword(dialect, placeholder) {
   }
   assertTrue(spec.token !== undefined, `Missing keyword spec for ${placeholder}`);
   return keywordForToken(dialect, spec.token);
+}
+
+function resolveTemplatePseudoKeyword(dialect, placeholder) {
+  const spec = kTemplatePseudoKeywordSpecs[placeholder];
+  assertTrue(spec !== undefined, `Unknown pseudokeyword placeholder ${placeholder}`);
+  assertTrue(spec.name !== undefined,
+             `Missing pseudokeyword spec for ${placeholder}`);
+  return pseudoKeywordForName(dialect, spec.name);
 }
 
 const kSpeakDialects = Object.freeze(Object.keys(kDialectKeywordFiles));
@@ -163,6 +206,15 @@ const _void = '__VOID__';
 const _while = '__WHILE__';
 const _with = '__WITH__';
 const _yield = '__YIELD__';
+const _arguments = '__ARGUMENTS__';
+const _as_name = '__AS__';
+const _constructor_name = '__CONSTRUCTOR__';
+const _eval = '__EVAL__';
+const _from = '__FROM__';
+const _meta = '__META__';
+const _of = '__OF__';
+const _proto = '__PROTO__';
+const _target = '__TARGET__';
 
 function evalWithDialect(dialect, source) {
   return eval(`\n//# sourceDialect=${dialect}\n${source}`);
@@ -173,7 +225,12 @@ function renderDialectSource(dialect, template) {
              `Unknown test dialect: ${dialect}`);
   return template.replaceAll(
       /__([A-Z_]+)__/g,
-      (match, placeholder) => resolveTemplateKeyword(dialect, placeholder));
+      (match, placeholder) => {
+        if (kTemplateKeywordSpecs[placeholder] !== undefined) {
+          return resolveTemplateKeyword(dialect, placeholder);
+        }
+        return resolveTemplatePseudoKeyword(dialect, placeholder);
+      });
 }
 
 function assertDialectResult(expected, dialect, source) {

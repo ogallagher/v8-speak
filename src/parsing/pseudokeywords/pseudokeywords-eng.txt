@@ -1,0 +1,9 @@
+arguments, PseudoKeywordName::kArguments
+as, PseudoKeywordName::kAs
+constructor, PseudoKeywordName::kConstructor
+eval, PseudoKeywordName::kEval
+from, PseudoKeywordName::kFrom
+meta, PseudoKeywordName::kMeta
+of, PseudoKeywordName::kOf
+__proto__, PseudoKeywordName::kProto
+target, PseudoKeywordName::kTarget

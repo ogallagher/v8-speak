@@ -1157,6 +1157,20 @@ class PreParser : public ParserBase<PreParser> {
   bool IdentifierEquals(const PreParserIdentifier& identifier,
                         const AstRawString* other);
 
+  bool IdentifierEqualsDialectName(const PreParserIdentifier& identifier,
+                                   PseudoKeywordName name) const {
+    return AstRawStringEqualsSourceDialectName(identifier.string_,
+                                               scanner()->source_dialect(),
+                                               name);
+  }
+
+  bool IdentifierEqualsDialectName(const AstRawString* identifier,
+                                   PseudoKeywordName name) const {
+    return AstRawStringEqualsSourceDialectName(identifier,
+                                               scanner()->source_dialect(),
+                                               name);
+  }
+
   V8_INLINE PreParserStatement DeclareFunction(
       const PreParserIdentifier& variable_name,
       const PreParserExpression& function, VariableMode mode, VariableKind kind,
@@ -1292,6 +1306,10 @@ class PreParser : public ParserBase<PreParser> {
     return identifier.IsEvalOrArguments();
   }
 
+  V8_INLINE bool IsConstructor(const PreParserIdentifier& identifier) const {
+    return identifier.IsConstructor();
+  }
+
   // Returns true if the expression is of type "this.foo".
   V8_INLINE static bool IsThisProperty(const PreParserExpression& expression) {
     return expression.IsThisProperty();
@@ -1309,10 +1327,6 @@ class PreParser : public ParserBase<PreParser> {
   V8_INLINE static PreParserExpression AsIdentifierExpression(
       const PreParserExpression& expression) {
     return expression;
-  }
-
-  V8_INLINE bool IsConstructor(const PreParserIdentifier& identifier) const {
-    return identifier.IsConstructor();
   }
 
   V8_INLINE bool IsName(const PreParserIdentifier& identifier) const {

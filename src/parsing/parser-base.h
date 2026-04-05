@@ -27,6 +27,7 @@
 #include "src/parsing/func-name-inferrer.h"
 #include "src/parsing/parse-info.h"
 #include "src/parsing/scanner.h"
+#include "src/parsing/pseudokeywords-gen.h"
 #include "src/parsing/token.h"
 #include "src/regexp/regexp.h"
 #include "src/zone/zone-chunk-list.h"
@@ -943,7 +944,22 @@ class ParserBase {
            scanner()->NextSymbol(ast_value_factory()) == name;
   }
 
+  bool PeekContextualKeyword(PseudoKeywordName name) {
+    return peek() == Token::IDENTIFIER &&
+           !scanner()->next_literal_contains_escapes() &&
+           impl()->IdentifierEqualsDialectName(
+               scanner()->NextSymbol(ast_value_factory()), name);
+  }
+
   bool CheckContextualKeyword(const AstRawString* name) {
+    if (PeekContextualKeyword(name)) {
+      Consume(Token::IDENTIFIER);
+      return true;
+    }
+    return false;
+  }
+
+  bool CheckContextualKeyword(PseudoKeywordName name) {
     if (PeekContextualKeyword(name)) {
       Consume(Token::IDENTIFIER);
       return true;
@@ -968,11 +984,30 @@ class ParserBase {
     }
   }
 
+  void ExpectContextualKeyword(PseudoKeywordName name,
+                               const char* fullname = nullptr, int pos = -1) {
+    Expect(Token::IDENTIFIER);
+    if (V8_UNLIKELY(!impl()->IdentifierEqualsDialectName(
+            scanner()->CurrentSymbol(ast_value_factory()), name))) {
+      ReportUnexpectedToken(scanner()->current_token());
+    }
+    if (V8_UNLIKELY(scanner()->literal_contains_escapes())) {
+      const char* full =
+          fullname == nullptr
+              ? SourceDialectNameSpelling(scanner()->source_dialect(), name)
+              : fullname;
+      int start = pos == -1 ? position() : pos;
+      impl()->ReportMessageAt(Scanner::Location(start, end_position()),
+                              MessageTemplate::kInvalidEscapedMetaProperty,
+                              full);
+    }
+  }
+
   bool CheckInOrOf(ForEachStatement::VisitMode* visit_mode) {
     if (Check(Token::IN)) {
       *visit_mode = ForEachStatement::ENUMERATE;
       return true;
-    } else if (CheckContextualKeyword(ast_value_factory()->of_string())) {
+    } else if (CheckContextualKeyword(PseudoKeywordName::kOf)) {
       *visit_mode = ForEachStatement::ITERATE;
       return true;
     }
@@ -980,8 +1015,7 @@ class ParserBase {
   }
 
   bool PeekInOrOf() {
-    return peek() == Token::IN ||
-           PeekContextualKeyword(ast_value_factory()->of_string());
+    return peek() == Token::IN || PeekContextualKeyword(PseudoKeywordName::kOf);
   }
 
   // Checks whether an octal literal was last seen between beg_pos and end_pos.
@@ -2653,8 +2687,10 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ParsePropertyInfo* prop_info,
     case ParsePropertyKind::kValue: {
       DCHECK_EQ(function_flags, ParseFunctionFlag::kIsNormal);
 
-      if (!prop_info->is_computed_name &&
-          scanner()->CurrentLiteralEquals("__proto__")) {
+      bool is_dialect_proto =
+          !prop_info->is_computed_name &&
+          impl()->IdentifierEqualsDialectName(name, PseudoKeywordName::kProto);
+      if (is_dialect_proto) {
         if (*has_seen_proto) {
           expression_scope()->RecordExpressionError(
               scanner()->location(), MessageTemplate::kDuplicateProto);
@@ -2666,8 +2702,14 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ParsePropertyInfo* prop_info,
       ExpressionT value =
           ParsePossibleDestructuringSubPattern(prop_info->accumulation_scope);
 
-      ObjectLiteralPropertyT result = factory()->NewObjectLiteralProperty(
-          name_expression, value, prop_info->is_computed_name);
+      ObjectLiteralPropertyT result = is_dialect_proto
+                                          ? factory()->NewObjectLiteralProperty(
+                                                name_expression, value,
+                                                ObjectLiteralProperty::PROTOTYPE,
+                                                false)
+                                          : factory()->NewObjectLiteralProperty(
+                                                name_expression, value,
+                                                prop_info->is_computed_name);
       impl()->SetFunctionNameFromPropertyName(result, name);
       return result;
     }
@@ -3743,8 +3785,7 @@ ParserBase<Impl>::ParseImportExpressions() {
   Consume(Token::IMPORT);
   int pos = position();
   if (Check(Token::PERIOD)) {
-    ExpectContextualKeyword(ast_value_factory()->meta_string(), "import.meta",
-                            pos);
+    ExpectContextualKeyword(PseudoKeywordName::kMeta, "import.meta", pos);
     if (!flags().is_module()) {
       impl()->ReportMessageAt(scanner()->location(),
                               MessageTemplate::kImportMetaOutsideModule);
@@ -3841,8 +3882,7 @@ typename ParserBase<Impl>::ExpressionT
 ParserBase<Impl>::ParseNewTargetExpression() {
   int pos = position();
   Consume(Token::PERIOD);
-  ExpectContextualKeyword(ast_value_factory()->target_string(), "new.target",
-                          pos);
+  ExpectContextualKeyword(PseudoKeywordName::kTarget, "new.target", pos);
 
   if (!GetReceiverScope()->is_function_scope()) {
     impl()->ReportMessageAt(scanner()->location(),
@@ -6469,7 +6509,7 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseForAwaitStatement(
     }
   }
 
-  ExpectContextualKeyword(ast_value_factory()->of_string());
+  ExpectContextualKeyword(PseudoKeywordName::kOf);
 
   const bool kAllowIn = true;
   ExpressionT iterable = impl()->NullExpression();
@@ -6550,7 +6590,7 @@ void ParserBase<Impl>::CheckClassMethodName(IdentifierT name,
       ReportMessage(MessageTemplate::kStaticPrototype);
       return;
     }
-  } else if (impl()->IdentifierEquals(name, avf->constructor_string())) {
+  } else if (impl()->IsConstructor(name)) {
     if (flags != ParseFunctionFlag::kIsNormal || IsAccessor(type)) {
       MessageTemplate msg = (flags & ParseFunctionFlag::kIsGenerator) != 0
                                 ? MessageTemplate::kConstructorIsGenerator
@@ -6577,7 +6617,7 @@ void ParserBase<Impl>::CheckClassFieldName(IdentifierT name, bool is_static) {
     return;
   }
 
-  if (impl()->IdentifierEquals(name, avf->constructor_string()) ||
+  if (impl()->IsConstructor(name) ||
       impl()->IdentifierEquals(name, avf->private_constructor_string())) {
     ReportMessage(MessageTemplate::kConstructorClassField);
     return;

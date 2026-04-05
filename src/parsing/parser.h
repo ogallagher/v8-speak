@@ -341,6 +341,13 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     return identifier == other;
   }
 
+  bool IdentifierEqualsDialectName(const AstRawString* identifier,
+                                   PseudoKeywordName name) const {
+    return AstRawStringEqualsSourceDialectName(identifier,
+                                               scanner()->source_dialect(),
+                                               name);
+  }
+
   Statement* DeclareClass(const AstRawString* variable_name, Expression* value,
                           ZonePtrList<const AstRawString>* names,
                           int class_token_pos, int end_pos);
@@ -540,7 +547,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   // Helper functions for recursive descent.
   V8_INLINE bool IsEval(const AstRawString* identifier) const {
-    return identifier == ast_value_factory()->eval_string();
+    return IdentifierEqualsDialectName(identifier, PseudoKeywordName::kEval);
   }
 
   V8_INLINE bool IsAsync(const AstRawString* identifier) const {
@@ -548,7 +555,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   }
 
   V8_INLINE bool IsArguments(const AstRawString* identifier) const {
-    return identifier == ast_value_factory()->arguments_string();
+    return IdentifierEqualsDialectName(identifier,
+                                       PseudoKeywordName::kArguments);
   }
 
   V8_INLINE bool IsEvalOrArguments(const AstRawString* identifier) const {
@@ -591,7 +599,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   }
 
   V8_INLINE bool IsConstructor(const AstRawString* identifier) const {
-    return identifier == ast_value_factory()->constructor_string();
+    return IdentifierEqualsDialectName(identifier,
+                                       PseudoKeywordName::kConstructor);
   }
 
   V8_INLINE bool IsName(const AstRawString* identifier) const {
