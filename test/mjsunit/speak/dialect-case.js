@@ -7,18 +7,56 @@ const kDialectKeywordFiles = Object.freeze({
   'js-spa': 'src/parsing/keywords/keywords-spa.txt',
 });
 
-const kTemplateKeywordTokens = Object.freeze({
-  ELSE: 'Token::ELSE',
-  FALSE: 'Token::FALSE_LITERAL',
-  FUNCTION: 'Token::FUNCTION',
-  IF: 'Token::IF',
-  NULL: 'Token::NULL_LITERAL',
-  RETURN: 'Token::RETURN',
-  THROW: 'Token::THROW',
-  TRUE: 'Token::TRUE_LITERAL',
-  TRY: 'Token::TRY',
-  VAR: 'Token::VAR',
-  WHILE: 'Token::WHILE',
+const kTemplateKeywordSpecs = Object.freeze({
+  ASYNC: Object.freeze({token: 'Token::ASYNC'}),
+  AWAIT: Object.freeze({token: 'Token::AWAIT'}),
+  BREAK: Object.freeze({token: 'Token::BREAK'}),
+  CASE: Object.freeze({token: 'Token::CASE'}),
+  CATCH: Object.freeze({token: 'Token::CATCH'}),
+  CLASS: Object.freeze({token: 'Token::CLASS'}),
+  CONST: Object.freeze({token: 'Token::CONST'}),
+  CONTINUE: Object.freeze({token: 'Token::CONTINUE'}),
+  DEBUGGER: Object.freeze({token: 'Token::DEBUGGER'}),
+  DEFAULT: Object.freeze({token: 'Token::DEFAULT'}),
+  DELETE: Object.freeze({token: 'Token::DELETE'}),
+  DO: Object.freeze({token: 'Token::DO'}),
+  ELSE: Object.freeze({token: 'Token::ELSE'}),
+  ENUM: Object.freeze({token: 'Token::ENUM'}),
+  EXPORT: Object.freeze({token: 'Token::EXPORT'}),
+  EXTENDS: Object.freeze({token: 'Token::EXTENDS'}),
+  FALSE: Object.freeze({token: 'Token::FALSE_LITERAL'}),
+  FINALLY: Object.freeze({token: 'Token::FINALLY'}),
+  FOR: Object.freeze({token: 'Token::FOR'}),
+  FUNCTION: Object.freeze({token: 'Token::FUNCTION'}),
+  GET: Object.freeze({token: 'Token::GET'}),
+  IF: Object.freeze({token: 'Token::IF'}),
+  IMPLEMENTS: Object.freeze({keyword: 'implements'}),
+  IMPORT: Object.freeze({token: 'Token::IMPORT'}),
+  IN: Object.freeze({token: 'Token::IN'}),
+  INSTANCEOF: Object.freeze({token: 'Token::INSTANCEOF'}),
+  INTERFACE: Object.freeze({keyword: 'interface'}),
+  LET: Object.freeze({token: 'Token::LET'}),
+  NEW: Object.freeze({token: 'Token::NEW'}),
+  NULL: Object.freeze({token: 'Token::NULL_LITERAL'}),
+  PACKAGE: Object.freeze({keyword: 'package'}),
+  PRIVATE: Object.freeze({keyword: 'private'}),
+  PROTECTED: Object.freeze({keyword: 'protected'}),
+  PUBLIC: Object.freeze({keyword: 'public'}),
+  RETURN: Object.freeze({token: 'Token::RETURN'}),
+  SET: Object.freeze({token: 'Token::SET'}),
+  STATIC: Object.freeze({token: 'Token::STATIC'}),
+  SUPER: Object.freeze({token: 'Token::SUPER'}),
+  SWITCH: Object.freeze({token: 'Token::SWITCH'}),
+  THIS: Object.freeze({token: 'Token::THIS'}),
+  THROW: Object.freeze({token: 'Token::THROW'}),
+  TRUE: Object.freeze({token: 'Token::TRUE_LITERAL'}),
+  TRY: Object.freeze({token: 'Token::TRY'}),
+  TYPEOF: Object.freeze({token: 'Token::TYPEOF'}),
+  VAR: Object.freeze({token: 'Token::VAR'}),
+  VOID: Object.freeze({token: 'Token::VOID'}),
+  WHILE: Object.freeze({token: 'Token::WHILE'}),
+  WITH: Object.freeze({token: 'Token::WITH'}),
+  YIELD: Object.freeze({token: 'Token::YIELD'}),
 });
 
 function loadDialectKeywordEntries(dialect) {
@@ -27,7 +65,7 @@ function loadDialectKeywordEntries(dialect) {
 
   const entries = [];
   for (const line of read(keywordFile).split('\n')) {
-    const match = line.trim().match(/^([a-z]+),\s*(Token::[A-Z_]+)$/);
+    const match = line.trim().match(/^([^,\s]+),\s*(Token::[A-Z_]+)$/);
     if (match === null) continue;
     entries.push(Object.freeze({keyword: match[1], token: match[2]}));
   }
@@ -47,6 +85,13 @@ function keywordForToken(dialect, token) {
   return entry.keyword;
 }
 
+function keywordForExactSpelling(dialect, spelling) {
+  const entry = kDialectKeywordEntries[dialect]
+                    .find((candidate) => candidate.keyword === spelling);
+  assertTrue(entry !== undefined, `Missing keyword ${spelling} for ${dialect}`);
+  return entry.keyword;
+}
+
 function keywordCount(dialect) {
   return kDialectKeywordEntries[dialect].length;
 }
@@ -57,52 +102,78 @@ function renderDialectKeywordProperties(dialect) {
       .join('\n');
 }
 
-function loadDialectKeywordSet(dialect) {
-  const wantedTokens = new Set(Object.values(kTemplateKeywordTokens));
-  const keywords = {};
-  for (const {keyword, token} of kDialectKeywordEntries[dialect]) {
-    if (!wantedTokens.has(token)) continue;
-    keywords[token] = keyword;
+function resolveTemplateKeyword(dialect, placeholder) {
+  const spec = kTemplateKeywordSpecs[placeholder];
+  assertTrue(spec !== undefined, `Unknown template placeholder ${placeholder}`);
+  if (spec.keyword !== undefined) {
+    return keywordForExactSpelling(dialect, spec.keyword);
   }
-
-  const renderedKeywords = {};
-  for (const [placeholder, token] of Object.entries(kTemplateKeywordTokens)) {
-    assertTrue(
-        keywords[token] !== undefined,
-        `Missing ${token} in ${keywordFile} for ${dialect}`);
-    renderedKeywords[placeholder] = keywords[token];
-  }
-  return Object.freeze(renderedKeywords);
+  assertTrue(spec.token !== undefined, `Missing keyword spec for ${placeholder}`);
+  return keywordForToken(dialect, spec.token);
 }
-
-const kDialectKeywordSets = Object.freeze(
-    Object.fromEntries(
-        Object.keys(kDialectKeywordFiles)
-            .map((dialect) => [dialect, loadDialectKeywordSet(dialect)])));
 
 const kSpeakDialects = Object.freeze(Object.keys(kDialectKeywordFiles));
 
+const _async = '__ASYNC__';
+const _await = '__AWAIT__';
+const _break = '__BREAK__';
+const _case = '__CASE__';
+const _catch = '__CATCH__';
+const _class = '__CLASS__';
+const _const = '__CONST__';
+const _continue = '__CONTINUE__';
+const _debugger = '__DEBUGGER__';
+const _default = '__DEFAULT__';
+const _delete = '__DELETE__';
+const _do = '__DO__';
 const _else = '__ELSE__';
+const _enum = '__ENUM__';
+const _export = '__EXPORT__';
+const _extends = '__EXTENDS__';
 const _false = '__FALSE__';
+const _finally = '__FINALLY__';
+const _for = '__FOR__';
 const _function = '__FUNCTION__';
+const _get = '__GET__';
 const _if = '__IF__';
+const _implements = '__IMPLEMENTS__';
+const _import = '__IMPORT__';
+const _in = '__IN__';
+const _instanceof = '__INSTANCEOF__';
+const _interface = '__INTERFACE__';
+const _let = '__LET__';
+const _new = '__NEW__';
 const _null = '__NULL__';
+const _package = '__PACKAGE__';
+const _private = '__PRIVATE__';
+const _protected = '__PROTECTED__';
+const _public = '__PUBLIC__';
 const _return = '__RETURN__';
+const _set = '__SET__';
+const _static = '__STATIC__';
+const _super = '__SUPER__';
+const _switch = '__SWITCH__';
+const _this = '__THIS__';
 const _throw = '__THROW__';
 const _true = '__TRUE__';
 const _try = '__TRY__';
+const _typeof = '__TYPEOF__';
 const _var = '__VAR__';
+const _void = '__VOID__';
 const _while = '__WHILE__';
+const _with = '__WITH__';
+const _yield = '__YIELD__';
 
 function evalWithDialect(dialect, source) {
   return eval(`\n//# sourceDialect=${dialect}\n${source}`);
 }
 
 function renderDialectSource(dialect, template) {
-  const keywords = kDialectKeywordSets[dialect];
-  assertTrue(keywords !== undefined, `Unknown test dialect: ${dialect}`);
+  assertTrue(kDialectKeywordFiles[dialect] !== undefined,
+             `Unknown test dialect: ${dialect}`);
   return template.replaceAll(
-      /__([A-Z_]+)__/g, (match, placeholder) => keywords[placeholder] ?? match);
+      /__([A-Z_]+)__/g,
+      (match, placeholder) => resolveTemplateKeyword(dialect, placeholder));
 }
 
 function assertDialectResult(expected, dialect, source) {

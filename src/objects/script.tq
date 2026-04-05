@@ -61,7 +61,7 @@ extern class Script extends Struct {
   // [source_mapping_url]: sourceMappingURL magic comment
   source_mapping_url: Object;
 
-  // [source_dialect]: sourceDialect magic comment
+  // [source_dialect]: selected source dialect when available
   source_dialect: String|Undefined;
 
   // [host_defined_options]: Options defined by the embedder.

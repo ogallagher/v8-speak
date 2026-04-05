@@ -84,10 +84,21 @@ syntaxSweep();
 `;
 }
 
+function assertEveryKeywordIsUsed(dialect, sources) {
+  const haystack = sources.join('\n');
+  for (const {keyword} of kDialectKeywordEntries[dialect]) {
+    assertTrue(
+        haystack.includes(keyword),
+        `Keyword ${keyword} is not used by ${dialect} keyword tests`);
+  }
+}
+
 for (const dialect of kSpeakDialects) {
-  assertDialectResult(keywordCount(dialect), dialect,
-                      allKeywordsAsPropertiesSource(dialect));
-  assertDialectResult(19, dialect, syntaxSweepSource(dialect));
+  const propertySource = allKeywordsAsPropertiesSource(dialect);
+  const sweepSource = syntaxSweepSource(dialect);
+  assertEveryKeywordIsUsed(dialect, [propertySource, sweepSource]);
+  assertDialectResult(keywordCount(dialect), dialect, propertySource);
+  assertDialectResult(19, dialect, sweepSource);
 }
 
 assertTemplateResultsForDialects([
@@ -140,7 +151,7 @@ falseLiteralBranch();
     template: `
 ${_function} nullType() {
   ${_var} value = ${_null};
-  ${_return} typeof value;
+  ${_return} ${_typeof} value;
 }
 nullType();
 `,
@@ -152,7 +163,7 @@ nullType();
 ${_function} caughtThrow() {
   ${_try} {
     ${_throw} 9;
-  } catch (value) {
+  } ${_catch} (value) {
     ${_return} value;
   }
 }

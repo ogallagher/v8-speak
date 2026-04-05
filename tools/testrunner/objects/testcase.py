@@ -554,7 +554,7 @@ class DuckProcessor:
 
 class D8TestCase(TestCase):
   def get_shell(self):
-    return "d8"
+    return "d8-speak"
 
   def _get_shell_flags(self):
     return ['--test']

@@ -499,6 +499,7 @@ class V8_EXPORT_PRIVATE Scanner {
     found_html_comment_ = false;
     scanner_error_ = MessageTemplate::kNone;
     source_dialect_ = flags_.source_dialect();
+    source_dialect_name_.Start();
     saw_non_comment_token_ = false;
     found_source_dialect_comment_ = false;
   }

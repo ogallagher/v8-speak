@@ -151,6 +151,17 @@ void UnoptimizedCompileFlags::SetFlagsForFunctionFromScript(Script script) {
 
   set_is_eval(script.compilation_type() == Script::COMPILATION_TYPE_EVAL);
   set_is_module(script.origin_options().IsModule());
+  Object source_dialect = script.source_dialect();
+  if (source_dialect.IsString()) {
+    String source_dialect_string = String::cast(source_dialect);
+    if (source_dialect_string.IsOneByteEqualTo(base::CStrVector("js-spa"))) {
+      set_source_dialect(SourceDialect::kJsSpa);
+    } else {
+      set_source_dialect(SourceDialect::kJsEng);
+    }
+  } else {
+    set_source_dialect(SourceDialect::kJsEng);
+  }
   DCHECK_IMPLIES(is_eval(), !is_module());
 
   set_block_coverage_enabled(block_coverage_enabled() &&

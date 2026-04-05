@@ -252,8 +252,10 @@ void Scanner::TryToParseSourceURLComment() {
   } else {
     return;
   }
-  if (c0_ != '=')
-    return;
+  while (IsWhiteSpace(c0_)) {
+    Advance();
+  }
+  if (c0_ != '=') return;
   LiteralBuffer source_dialect_literal;
   if (value != nullptr) value->Start();
   source_dialect_literal.Start();
@@ -289,6 +291,7 @@ void Scanner::TryToParseSourceURLComment() {
 bool Scanner::TrySetSourceDialect(base::Vector<const uint8_t> value_literal) {
   if (saw_non_comment_token_ || found_source_dialect_comment_) {
     ReportScannerError(source_pos(), MessageTemplate::kInvalidOrUnexpectedToken);
+    set_parser_error();
     return false;
   }
   SourceDialect parsed_source_dialect;
@@ -296,12 +299,13 @@ bool Scanner::TrySetSourceDialect(base::Vector<const uint8_t> value_literal) {
     source_dialect_ = parsed_source_dialect;
     source_dialect_name_.Start();
     for (int i = 0; i < value_literal.length(); ++i) {
-      source_dialect_name_.AddChar(value_literal[i]);
+      source_dialect_name_.AddChar(static_cast<char>(value_literal[i]));
     }
     found_source_dialect_comment_ = true;
     return true;
   }
   ReportScannerError(source_pos(), MessageTemplate::kInvalidOrUnexpectedToken);
+  set_parser_error();
   return false;
 }
 
@@ -649,14 +653,13 @@ template Handle<String> Scanner::SourceMappingUrl(LocalIsolate* isolate) const;
 
 template <typename IsolateT>
 Handle<String> Scanner::SourceDialectString(IsolateT* isolate) const {
-  Handle<String> tmp;
   if (source_dialect_name_.length() > 0) {
-    tmp = source_dialect_name_.Internalize(isolate);
-  } else {
-    tmp = isolate->factory()
-              ->InternalizeUtf8String(SourceDialectName(source_dialect_));
+    return source_dialect_name_.Internalize(isolate);
   }
-  return tmp;
+  const char* dialect_name = SourceDialectName(source_dialect_);
+  return isolate->factory()->InternalizeString(base::Vector<const uint8_t>(
+      reinterpret_cast<const uint8_t*>(dialect_name),
+      static_cast<int>(strlen(dialect_name))));
 }
 
 template Handle<String> Scanner::SourceDialectString(Isolate* isolate) const;

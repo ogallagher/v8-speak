@@ -3391,10 +3391,7 @@ void Parser::HandleSourceURLComments(IsolateT* isolate, Handle<Script> script) {
   if (!source_mapping_url.is_null()) {
     script->set_source_mapping_url(*source_mapping_url);
   }
-  Handle<String> source_dialect = scanner_.SourceDialectString(isolate);
-  if (!source_dialect.is_null()) {
-    script->set_source_dialect(*source_dialect);
-  }
+  script->set_source_dialect(*scanner_.SourceDialectString(isolate));
 }
 
 template void Parser::HandleSourceURLComments(Isolate* isolate,

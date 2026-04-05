@@ -559,6 +559,7 @@ V8_INLINE Token::Value Scanner::ScanSingleToken() {
 void Scanner::Scan(TokenDesc* next_desc) {
   DCHECK_EQ(next_desc, &next());
 
+  next_desc->after_line_terminator = false;
   next_desc->token = ScanSingleToken();
   if (next_desc->token != Token::WHITESPACE &&
       next_desc->token != Token::UNINITIALIZED) {
